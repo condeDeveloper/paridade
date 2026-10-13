@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.so }}
+
+    # bash nos tres sistemas: no Windows o shell padrao e o PowerShell, e ele
+    # desmonta "-Dexec.args=..." em dois argumentos antes de o Maven ver.
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+      matrix:
+        so: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Testes
+        run: mvn -B -ntp verify
+
+      - name: todo padrao de perda recupera o byte certo ou recusa
+        run: mvn -B -ntp -q exec:java -Dexec.args="correcao"
+
+      - name: espaco gasto por perda tolerada
+        run: mvn -B -ntp -q exec:java -Dexec.args="espaco"
+
+      - name: a durabilidade exata, somada padrao por padrao
+        run: mvn -B -ntp -q exec:java -Dexec.args="durabilidade"
+
+      - name: o que custa reconstruir um fragmento
+        run: mvn -B -ntp -q exec:java -Dexec.args="reconstrucao"
+
+      - name: a largura do codigo muda os tres eixos
+        run: mvn -B -ntp -q exec:java -Dexec.args="largura"
+
+      - name: Relatorios de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-${{ matrix.so }}
+          path: target/surefire-reports
